@@ -18,7 +18,14 @@ int main(int argc, char *argv[])
     std::string path;
     std::string strategy;
 
-    QDir::Filters filters = QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot | QDir::NoSymLinks | QDir::Hidden;
+    /*
+     * QDir::Files  - List files
+     * QDir::NoDotAndDotDot - Do not list the special entries "." and "..".
+     * QDir::NoSymLinks - Do not list symbolic links (ignored by operating systems that don't support symbolic links).
+     * QDir::Hidden - List hidden files (on Unix, files starting with a ".").
+     * QDir::Dirs - List directories that match the filters
+    */
+    QDir::Filters filters = QDir::Files | QDir::NoDotAndDotDot | QDir::NoSymLinks | QDir::Hidden  | QDir::Dirs;
 
     /*
      * Консольный интерфейс для клиента:

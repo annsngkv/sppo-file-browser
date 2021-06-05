@@ -11,10 +11,16 @@
 QMap<QString, QPair<qint64, qreal>> FileGroupingByType::calculateAndGroup(const QString &path, QDir::Filters filters) {
     QMap<QString, QPair<qint64, qreal>> foldersInfo;
 
-    foldersInfo = recursiveCalculate(foldersInfo, path, filters);
-    setPercents(foldersInfo);
+    QFileInfo file(path);
 
-    return foldersInfo;
+    if (file.isDir()) {
+        foldersInfo = recursiveCalculate(foldersInfo, path, filters);
+        setPercents(foldersInfo);
+
+        return foldersInfo;
+    } else {
+        throw std::runtime_error("Not directory");
+    }
 }
 
 /*
