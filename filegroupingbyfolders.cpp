@@ -11,15 +11,53 @@
 QMap<QString, QPair<qint64, qreal>> FileGroupingByFolders::calculateAndGroup(const QString &path, QDir::Filters filters) {
     QMap<QString, QPair<qint64, qreal>> foldersInfo;
 
-    foldersInfo = recursiveCalculate(foldersInfo, path, filters);
-    setPercents(foldersInfo);
+    QFileInfo file(path);
+    QString key;
 
-    qint64 total_size = getTotalSize(foldersInfo);
+    if (file.isDir()) {
+        QDir dir = file.dir();
 
-    foldersInfo["total_size"].first = total_size;
+        //Проверяем, можем ли мы зайти в директорию и не является ли она пустой
+        if (dir.cd(file.fileName()) && !dir.isEmpty()) {
+            /*
+            Если зашли в папку, то пройдемся по контейнеру QFileInfoList, полученного методом
+            entryInfoList
+            */
+           qint64 root_size = 0;
 
-    if (total_size == 0) {
-        foldersInfo["total_size"].second = 0.0;
+           foreach (QFileInfo file_info, dir.entryInfoList(filters)) {
+               //начинаем рекурсивный обход
+               qint64 size = 0;
+
+               //Если это папка, то обходим ее рекурсивно и сохраняем полученный размер
+               if (file_info.isDir()) {
+                   size = recursiveCalculate(size, file_info.filePath(), filters);
+
+                   if (size != 0) {
+                       key = file_info.fileName();
+                       foldersInfo[key] = qMakePair(size, 0.0);
+                   }
+               } else {//иначе суммируем размер всех файлов папки верхнего уровня
+                   root_size += file_info.size();
+               }
+           }
+
+           //заносим размер папки верхнего уровня
+           foldersInfo[dir.dirName()] = qMakePair(root_size, 0.0);
+
+           setPercents(foldersInfo);
+
+           qint64 total_size = getTotalSize(foldersInfo);
+
+           if (total_size == 0) {
+               foldersInfo[dir.dirName()] = qMakePair(0, 0.0);
+           }
+
+           //выходим из папки
+           dir.cdUp();
+        }
+    } else {
+        throw std::runtime_error("Not directory");
     }
 
     return foldersInfo;
@@ -32,7 +70,7 @@ QMap<QString, QPair<qint64, qreal>> FileGroupingByFolders::calculateAndGroup(con
  * 2) Проверяем, является ли наш файл директорией, если да, то начинаем рекурсивный обход всех его файлов
  * 3) Иначе, если полученный директорией не являлся, то мы сохраняем размер файла в мапе по ключу, являющемуся названием папки
 */
-QMap<QString, QPair<qint64, qreal>> FileGroupingByFolders::recursiveCalculate(QMap<QString, QPair<qint64, qreal>> &info, const QString &path, QDir::Filters filters) {
+qint64 FileGroupingByFolders::recursiveCalculate(qint64 &size, const QString &path, QDir::Filters filters) {
     QFileInfo file(path);
 
     if (file.isDir()) {
@@ -46,7 +84,7 @@ QMap<QString, QPair<qint64, qreal>> FileGroupingByFolders::recursiveCalculate(QM
             */
            foreach (QFileInfo file_info, dir.entryInfoList(filters)) {
                //начинаем рекурсивный обход
-               info = recursiveCalculate(info, file_info.filePath(), filters);
+               size = recursiveCalculate(size, file_info.filePath(), filters);
            }
 
            //выходим из папки
@@ -54,17 +92,11 @@ QMap<QString, QPair<qint64, qreal>> FileGroupingByFolders::recursiveCalculate(QM
         }
 
     } else {
-        //Если такой ключ сущестует, то увеличиваем размер
-        if (info.contains(file.dir().dirName())) {
-            info[file.dir().dirName()].first += file.size();
-        } else {
-            info[file.dir().dirName()].first = file.size();
-            info[file.dir().dirName()].second = 0.0;
-        }
+        size += file.size();
 
-        return info;
+        return size;
     }
 
-    return info;
+    return size;
 }
 

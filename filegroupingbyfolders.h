@@ -29,7 +29,7 @@ class FileGroupingByFolders : public IFileGrouping
          *
          * return QMap<QString, QPair<qint64, qreal>>
         */
-        QMap<QString, QPair<qint64, qreal>> recursiveCalculate(QMap<QString, QPair<qint64, qreal>> &info, const QString &path, QDir::Filters filters);
+        qint64 recursiveCalculate(qint64 &size, const QString &path, QDir::Filters filters);
 };
 
 #endif // FILEGROUPINGBYFOLDERS_H
