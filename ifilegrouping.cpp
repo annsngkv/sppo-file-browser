@@ -45,7 +45,7 @@ QString IFileGrouping::getPercentWithSuffix(qreal percent) {
     qreal round_percent = qreal(qRound(percent * 100)) / 100;
     QString percent_str;
 
-    if (percent < 0.01) {
+    if (percent < 0.01 && percent != 0) {
         percent_str = "<0.01";
     } else {
         percent_str.setNum(round_percent);

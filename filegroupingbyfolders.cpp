@@ -18,43 +18,43 @@ QMap<QString, QPair<qint64, qreal>> FileGroupingByFolders::calculateAndGroup(con
         QDir dir = file.dir();
 
         //Проверяем, можем ли мы зайти в директорию и не является ли она пустой
-        if (dir.cd(file.fileName()) && !dir.isEmpty()) {
-            /*
-            Если зашли в папку, то пройдемся по контейнеру QFileInfoList, полученного методом
-            entryInfoList
-            */
-           qint64 root_size = 0;
+        if (dir.cd(file.fileName())) {
+            if (!dir.isEmpty()) {
+                /*
+                Если зашли в папку, то пройдемся по контейнеру QFileInfoList, полученного методом
+                entryInfoList
+                */
+               qint64 root_size = 0;
 
-           foreach (QFileInfo file_info, dir.entryInfoList(filters)) {
-               //начинаем рекурсивный обход
-               qint64 size = 0;
+               foreach (QFileInfo file_info, dir.entryInfoList(filters)) {
+                   //начинаем рекурсивный обход
+                   qint64 size = 0;
 
-               //Если это папка, то обходим ее рекурсивно и сохраняем полученный размер
-               if (file_info.isDir()) {
-                   size = recursiveCalculate(size, file_info.filePath(), filters);
+                   //Если это папка, то обходим ее рекурсивно и сохраняем полученный размер
+                   if (file_info.isDir()) {
+                       size = recursiveCalculate(size, file_info.filePath(), filters);
 
-                   if (size != 0) {
-                       key = file_info.fileName();
-                       foldersInfo[key] = qMakePair(size, 0.0);
+                       if (size != 0) {
+                           key = file_info.fileName();
+                           foldersInfo[key] = qMakePair(size, 0.0);
+                       }
+                   } else {//иначе суммируем размер всех файлов папки верхнего уровня
+                       root_size += file_info.size();
                    }
-               } else {//иначе суммируем размер всех файлов папки верхнего уровня
-                   root_size += file_info.size();
                }
-           }
 
-           //заносим размер папки верхнего уровня
-           foldersInfo[dir.dirName()] = qMakePair(root_size, 0.0);
+               //заносим размер папки верхнего уровня
+               foldersInfo[dir.dirName()] = qMakePair(root_size, 0.0);
 
-           setPercents(foldersInfo);
-
-           qint64 total_size = getTotalSize(foldersInfo);
-
-           if (total_size == 0) {
-               foldersInfo[dir.dirName()] = qMakePair(0, 0.0);
-           }
+               setPercents(foldersInfo);
+            } else {
+                foldersInfo[dir.dirName()] = qMakePair(0, 0.0);
+            }
 
            //выходим из папки
            dir.cdUp();
+        } else {
+            throw std::runtime_error("Can't go to directory");
         }
     } else {
         throw std::runtime_error("Not directory");
