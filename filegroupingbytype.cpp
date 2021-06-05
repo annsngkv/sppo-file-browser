@@ -14,13 +14,27 @@ QMap<QString, QPair<qint64, qreal>> FileGroupingByType::calculateAndGroup(const 
     QFileInfo file(path);
 
     if (file.isDir()) {
-        foldersInfo = recursiveCalculate(foldersInfo, path, filters);
-        setPercents(foldersInfo);
+        QDir dir = file.dir();
 
-        return foldersInfo;
+        //Проверяем, можем ли мы зайти в директорию и не является ли она пустой
+        if (dir.cd(file.fileName())) {
+            if (!dir.isEmpty()) {
+                foldersInfo = recursiveCalculate(foldersInfo, path, filters);
+                setPercents(foldersInfo);
+            } else {
+                foldersInfo[dir.dirName()] = qMakePair(0, 0.0);
+            }
+
+            //выходим из папки
+            dir.cdUp();
+        } else {
+           throw std::runtime_error("Can't go to directory");
+        }
     } else {
         throw std::runtime_error("Not directory");
     }
+
+     return foldersInfo;
 }
 
 /*
