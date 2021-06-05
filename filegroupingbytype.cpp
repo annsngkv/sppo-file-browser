@@ -15,26 +15,17 @@ QMap<QString, QPair<qint64, qreal>> FileGroupingByType::calculateAndGroup(const 
 
     if (file.isDir()) {
         QDir dir = file.dir();
+        foldersInfo = recursiveCalculate(foldersInfo, path, filters);
+        setPercents(foldersInfo);
 
-        //Проверяем, можем ли мы зайти в директорию и не является ли она пустой
-        if (dir.cd(file.fileName())) {
-            if (!dir.isEmpty()) {
-                foldersInfo = recursiveCalculate(foldersInfo, path, filters);
-                setPercents(foldersInfo);
-            } else {
-                foldersInfo[dir.dirName()] = qMakePair(0, 0.0);
-            }
-
-            //выходим из папки
-            dir.cdUp();
-        } else {
-           throw std::runtime_error("Can't go to directory");
+        if (foldersInfo.empty()) {
+            foldersInfo[dir.dirName()] = qMakePair(0, 0.0);
         }
     } else {
         throw std::runtime_error("Not directory");
     }
 
-     return foldersInfo;
+    return foldersInfo;
 }
 
 /*
@@ -51,20 +42,23 @@ QMap<QString, QPair<qint64, qreal>> FileGroupingByType::recursiveCalculate(QMap<
         QDir dir = file.dir();
 
         //Проверяем, можем ли мы зайти в директорию и не является ли она пустой
-        if (dir.cd(file.fileName()) && !dir.isEmpty()) {
-            /*
-            Если зашли в папку, то пройдемся по контейнеру QFileInfoList, полученного методом
-            entryInfoList,
-            */
-           foreach (QFileInfo file_info, dir.entryInfoList(filters)) {
-               //начинаем рекурсивный обход
-               info = recursiveCalculate(info, file_info.filePath(), filters);
-           }
+        if (dir.cd(file.fileName())) {
+            if (!dir.isEmpty()) {
+                /*
+                Если зашли в папку, то пройдемся по контейнеру QFileInfoList, полученного методом
+                entryInfoList,
+                */
+               foreach (QFileInfo file_info, dir.entryInfoList(filters)) {
+                   //начинаем рекурсивный обход
+                   info = recursiveCalculate(info, file_info.filePath(), filters);
+               }
+            }
 
-           //выходим из папки
-           dir.cdUp();
+            //выходим из папки
+            dir.cdUp();
+        } else {
+            throw std::runtime_error("Can't go to directory");
         }
-
     } else {
         QString key;
         //если файл без расширения, то заносим его под ключ "Others"
