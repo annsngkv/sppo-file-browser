@@ -19,7 +19,7 @@ QMap<QString, QPair<qint64, qreal>> FileGroupingByType::calculateAndGroup(const 
         setPercents(foldersInfo);
 
         if (foldersInfo.empty()) {
-            foldersInfo[dir.dirName()] = qMakePair(0, 0.0);
+            foldersInfo[file.fileName()] = qMakePair(0, 0.0);
         }
     } else {
         throw std::runtime_error("Not directory");
