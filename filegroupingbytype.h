@@ -19,7 +19,7 @@ class FileGroupingByType : public IFileGrouping
          *
          * return QMap<QString, QPair<qint64, qreal>>
          */
-        QMap<QString, QPair<qint64, qreal>> calculateAndGroup(const QString &path, QDir::Filters filters);
+        QList<SomeData> calculateAndGroup(const QString &path, QDir::Filters filters);
         /*
          * Рекурсивная функция обхода папок
          *

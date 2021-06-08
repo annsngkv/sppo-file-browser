@@ -71,11 +71,11 @@ void IFileGrouping::setPercents(QMap<QString, QPair<qint64, qreal>> &files_info)
 /*
  * Отображение структуры, хранящей информацию о файлах по группам
 */
-void IFileGrouping::displayFilesInfo(QMap<QString, QPair<qint64, qreal>> const &files_info) {
-    QMapIterator<QString, QPair<qint64, qreal>> f_it(files_info);
+void IFileGrouping::displayFilesInfo(QList<SomeData> const &files_info) {
+    QListIterator<SomeData> f_it(files_info);
 
     while (f_it.hasNext()) {
-        f_it.next();
-        qDebug() << f_it.key() << ": " << getKb(f_it.value().first) << " /" << getPercentWithSuffix(f_it.value().second);
+        SomeData sd = f_it.next();
+        qDebug() << sd.name << sd.size << "/" << sd.percent;
     }
 }

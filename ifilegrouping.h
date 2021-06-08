@@ -7,6 +7,8 @@
 #include <QMap>
 #include <QPair>
 #include <QMapIterator>
+#include <QList>
+#include <somedata.h>
 
 /* Описываем класс - интерфейс стартегии*/
 class IFileGrouping {
@@ -27,7 +29,7 @@ class IFileGrouping {
          *
          * return QMap<QString, QPair<qint64, qreal>>
         */
-        virtual QMap<QString, QPair<qint64, qreal>> calculateAndGroup(QString const& path, QDir::Filters filters) = 0;
+        virtual QList<SomeData> calculateAndGroup(QString const& path, QDir::Filters filters) = 0;
         /*
          * Функция для установки структуре, хранящей информацию о файлах, размера файлов в процентах
          *
@@ -76,7 +78,7 @@ class IFileGrouping {
          *
          * return void
         */
-        virtual void displayFilesInfo(QMap<QString, QPair<qint64, qreal>> const &files_info);
+        virtual void displayFilesInfo(QList<SomeData> const &files_info);
 };
 
 #endif // IFILEGROUPING_H
