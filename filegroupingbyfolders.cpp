@@ -8,7 +8,7 @@
  * 2) В полученную структуру заносим информацию о размере групп в процентах
  * 3) Если исходная папка была пуста, то указываем, что ее размер равен 0
 */
-QMap<QString, QPair<qint64, qreal>> FileGroupingByFolders::calculateAndGroup(const QString &path, QDir::Filters filters) {
+QList<SomeData> FileGroupingByFolders::calculateAndGroup(const QString &path, QDir::Filters filters) {
     QMap<QString, QPair<qint64, qreal>> foldersInfo;
 
     QFileInfo file(path);
@@ -60,7 +60,16 @@ QMap<QString, QPair<qint64, qreal>> FileGroupingByFolders::calculateAndGroup(con
         throw std::runtime_error("Not directory");
     }
 
-    return foldersInfo;
+
+    QMapIterator<QString, QPair<qint64, qreal>> f_it(foldersInfo);
+    QList<SomeData> list_data;
+    while (f_it.hasNext()) {
+        f_it.next();
+        SomeData data(f_it.key(), getKb(f_it.value().first), getPercentWithSuffix(f_it.value().second));
+        list_data.append(data);
+    }
+
+    return list_data;
 }
 
 /*
