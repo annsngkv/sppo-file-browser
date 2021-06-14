@@ -1,5 +1,4 @@
 #include "mainwindow.h"
-#include <QSplitter>
 #include <QListView>
 #include <QTreeView>
 #include <QTextEdit>
@@ -21,8 +20,12 @@
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent),
-      m_groupComboBox(createGroupdBox())
+      m_groupComboBox(createGroupBox()),
+      m_displayComboBox(createDisplayBox())
 {
+    //Определям стратегии
+    fileGroupingByFolders = new FileGroupingByFolders();
+    fileGroupingByType = new FileGroupingByType();
     //Устанавливаем размер главного окна
     this->setGeometry(100, 100, 1000, 500);
     this->setStatusBar(new QStatusBar(this));
@@ -36,7 +39,7 @@ MainWindow::MainWindow(QWidget *parent)
     dirModel->setRootPath(homePath);
 
     //Создаем объект класса-контекста, по умолчанию группируем по папкам
-    grouper = new Grouper(std::make_shared<FileGroupingByFolders>());
+    grouper = new Grouper(fileGroupingByFolders);
     QDir::Filters filters = QDir::Files | QDir::NoDotAndDotDot | QDir::NoSymLinks | QDir::Hidden  | QDir::Dirs;
     QList<SomeData> sd = grouper->grouping(homePath, filters);
 
@@ -51,22 +54,39 @@ MainWindow::MainWindow(QWidget *parent)
     treeView->header()->resizeSection(0, 200);
 
     //Разделитель
-    QSplitter *splitter = new QSplitter(parent);
-    //Контейнер для фильтра выбора типа группировки файлов
+    splitter = new QSplitter(parent);
+    //Контейнер для фильтра выбора типа группировки файлов и типа отображения группировки
     QHBoxLayout *settingsLayout = new QHBoxLayout(parent);
     settingsLayout->addWidget(new QLabel("Group by:"));
     settingsLayout->addWidget(m_groupComboBox);
+    settingsLayout->addWidget(new QLabel("Display in:"));
+    settingsLayout->addWidget(m_displayComboBox);
 
     //Показываем нашу модель в табличном виде
     tableView = new QTableView;
     tableView->setModel(tablemodel);
 
-    //Добавляем вьюшки в сплиттер и устанавиливаем его в центре
+    //Определяем вьюхи для отображения диаграмм
+    pieChartView = new QChartView();
+    barChartView = new QChartView();
+    //Опредеялем адаптеры
+    pieChartAdapter = new PieChartAdapter(pieChartView);
+    barChartAdapter = new BarChartAdapter(barChartView);
+    tableViewAdapter = new TableViewAdapter(tableView, tablemodel);
+    //Подписываем адаптеры-наблюдатели на стратегии
+    fileGroupingByFolders->attach(pieChartAdapter);
+    fileGroupingByType->attach(pieChartAdapter);
+    fileGroupingByFolders->attach(barChartAdapter);
+    fileGroupingByType->attach(barChartAdapter);
+    fileGroupingByFolders->attach(tableViewAdapter);
+    fileGroupingByType->attach(tableViewAdapter);
+    //Добавляем вьюшки в сплиттер и устанавиливаем его в центре (по умолчанию отображаем в табличном виде
+    //и группируем по папкам)
     splitter->addWidget(treeView);
     splitter->addWidget(tableView);
     setCentralWidget(splitter);
 
-    //Добавляем наш дроб-даун в меню окна
+    //Добавляем наши дроб-даун в меню окна
     QWidget *widget = new QWidget(parent);
     widget->setLayout(settingsLayout);
     setMenuWidget(widget);
@@ -80,7 +100,12 @@ MainWindow::MainWindow(QWidget *parent)
     //Выполняем соединение слота и сигнала, когда мы выбрали в фильтре, как группировать данные
     connect(m_groupComboBox,
             static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
-            this, &MainWindow::updateUI);
+            this, &MainWindow::updateGrouping);
+    //Выполняем соединение слота и сигнала, когда мы выбрали в фильтре, как отображать
+    //сгруппированные данные
+    connect(m_displayComboBox,
+            static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
+            this, &MainWindow::updateDisplay);
 
     //Пример организации установки курсора в TreeView относит ельно модельного индекса
     QItemSelection toggleSelection;
@@ -117,19 +142,14 @@ void MainWindow::on_selectionChangedSlot(const QItemSelection &selected, const Q
 
     switch (idx) {
         case 1:
-            grouper->changeStrategy(std::make_shared<FileGroupingByType>());
+            grouper->changeStrategy(fileGroupingByType);
             some_data = grouper->grouping(currentPath, filters);
             break;
         default:
-            grouper->changeStrategy(std::make_shared<FileGroupingByFolders>());
+            grouper->changeStrategy(fileGroupingByFolders);
             some_data = grouper->grouping(currentPath, filters);
             break;
     }
-
-    tablemodel->needReset();
-    tablemodel->setSomeData(some_data);
-    tablemodel->insertRow(tablemodel->rowCount(tablemodel->index(0, 0, QModelIndex())));
-    tableView->setRootIndex(tablemodel->index(0, 0, QModelIndex()));
 }
 
 MainWindow::~MainWindow()
@@ -139,11 +159,23 @@ MainWindow::~MainWindow()
     delete tablemodel;
     delete grouper;
     delete some_data;
-
+    delete splitter;
+    delete treeView;
+    delete tableView;
+    delete pieChartView;
+    delete barChartView;
+    delete m_groupComboBox;
+    delete m_displayComboBox;
+    delete fileGroupingByFolders;
+    delete fileGroupingByType;
+    delete pieChartAdapter;
+    delete barChartAdapter;
+    delete tableViewAdapter;
+    delete splitter;
 }
 
-//Создание фильтра
-QComboBox* MainWindow::createGroupdBox() const
+//Создание фильтра для выбора группирования файлов
+QComboBox* MainWindow::createGroupBox() const
 {
     QComboBox *comboBox = new QComboBox();
     comboBox->addItem("folders ", 0);
@@ -152,8 +184,19 @@ QComboBox* MainWindow::createGroupdBox() const
     return comboBox;
 }
 
+//Создание фильтра для выбора типа отображения сгруппированный файлов
+QComboBox* MainWindow::createDisplayBox() const
+{
+    QComboBox *comboBox = new QComboBox();
+    comboBox->addItem("Table View", 0);
+    comboBox->addItem("Pie Chart", 1);
+    comboBox->addItem("Bar Chart", 2);
+
+    return comboBox;
+}
+
 //Показываем файлы текущей папки в  зависимости от выбранного фильтра
-void MainWindow::updateUI() {
+void MainWindow::updateGrouping() {
     QDir::Filters filters = QDir::Files | QDir::NoDotAndDotDot | QDir::NoSymLinks | QDir::Hidden  | QDir::Dirs;
     QList<SomeData> some_data;
 
@@ -161,17 +204,30 @@ void MainWindow::updateUI() {
 
     switch (idx) {
         case 1:
-            grouper->changeStrategy(std::make_shared<FileGroupingByType>());
+            grouper->changeStrategy(fileGroupingByType);
             some_data = grouper->grouping(currentPath, filters);
             break;
         default:
-            grouper->changeStrategy(std::make_shared<FileGroupingByFolders>());
+            grouper->changeStrategy(fileGroupingByFolders);
             some_data = grouper->grouping(currentPath, filters);
             break;
     }
 
-    tablemodel->needReset();
-    tablemodel->setSomeData(some_data);
-    tablemodel->insertRow(tablemodel->rowCount(tablemodel->index(0, 0, QModelIndex())));
-    tableView->setRootIndex(tablemodel->index(0, 0, QModelIndex()));
+}
+
+//Показываем сгрупированные файлы в различных видах, в зависимости от выбранного фильтра
+void MainWindow::updateDisplay() {
+    int idx = m_displayComboBox->itemData(m_displayComboBox->currentIndex()).toInt();
+
+    switch (idx) {
+        case 1:
+            splitter->replaceWidget(1, pieChartView);
+            break;
+        case 2:
+            splitter->replaceWidget(1, barChartView);
+            break;
+        default:
+            splitter->replaceWidget(1, tableView);
+            break;
+    }
 }
