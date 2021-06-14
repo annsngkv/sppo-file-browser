@@ -33,6 +33,8 @@ QList<SomeData> FileGroupingByType::calculateAndGroup(const QString &path, QDir:
         list_data.append(data);
     }
 
+    notify(list_data);
+
     return list_data;
 }
 
