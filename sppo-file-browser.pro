@@ -1,6 +1,7 @@
 QT       += core gui
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+QT += charts
 
 TARGET = sppo-file-browser
 TEMPLATE = app
@@ -11,7 +12,13 @@ SOURCES += main.cpp \
     filegroupingbyfolders.cpp \
     grouper.cpp \
     filebrowserdatamodel.cpp \
-    mainwindow.cpp
+    mainwindow.cpp \
+    piechartadapter.cpp \
+    tableviewadapter.cpp \
+    piechart.cpp \
+    chart.cpp \
+    barchartadapter.cpp \
+    barchart.cpp
 
 # The following define makes your compiler emit warnings if you use
 # any feature of Qt which as been marked deprecated (the exact warnings
@@ -31,4 +38,11 @@ HEADERS += \
     grouper.h \
     filebrowserdatamodel.h \
     mainwindow.h \
-    somedata.h
+    somedata.h \
+    filebrowserobserver.h \
+    piechartadapter.h \
+    tableviewadapter.h \
+    piechart.h \
+    chart.h \
+    barchartadapter.h \
+    barchart.h

@@ -79,3 +79,19 @@ void IFileGrouping::displayFilesInfo(QList<SomeData> const &files_info) {
         qDebug() << sd.name << sd.size << "/" << sd.percent;
     }
 }
+
+void IFileGrouping::attach(FileBrowserObserver* adapter) {
+    adapters.push_back(adapter);
+}
+
+void IFileGrouping::detach(FileBrowserObserver* adapter) {
+    adapters.erase(std::remove(adapters.begin(), adapters.end(), adapter), adapters.end());
+}
+
+void IFileGrouping::notify(const QList<SomeData> &data) {
+    for (std::vector<FileBrowserObserver*>::const_iterator iter = adapters.begin(); iter != adapters.end(); ++iter) {
+        if (*iter != 0) {
+            (*iter)->displayUpdate(data); //каждый подписанный объект обновляет свое отображение
+        }
+    }
+}

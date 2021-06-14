@@ -69,6 +69,8 @@ QList<SomeData> FileGroupingByFolders::calculateAndGroup(const QString &path, QD
         list_data.append(data);
     }
 
+    notify(list_data);
+
     return list_data;
 }
 
