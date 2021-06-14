@@ -9,6 +9,11 @@
 #include <QMapIterator>
 #include <QList>
 #include <somedata.h>
+#include <QVector>
+#include "filebrowserobserver.h"
+#include "iostream"
+#include "memory"
+#include "vector"
 
 /* Описываем класс - интерфейс стартегии*/
 class IFileGrouping {
@@ -79,6 +84,15 @@ class IFileGrouping {
          * return void
         */
         virtual void displayFilesInfo(QList<SomeData> const &files_info);
+
+        //метод подписки объекта для оповещения
+        virtual void attach(FileBrowserObserver* adapter);
+        //метод исключения подписки объекта от оповещения
+        virtual void detach(FileBrowserObserver* adapter);
+        //метод оповещения, в случае изменения данных
+        virtual void notify(const QList<SomeData> &data);
+    protected:
+        std::vector<FileBrowserObserver*> adapters;
 };
 
 #endif // IFILEGROUPING_H
